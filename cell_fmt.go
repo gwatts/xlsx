@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/kr/pretty"
 )
 
 var (
@@ -82,19 +80,6 @@ type Section struct {
 	SubType FormatSubType
 	Tokens  []FmtToken
 }
-
-/*
-func (ft *Section) IsDuration() bool {
-	if ft.Type == TimeFormat {
-		for _, t := range ft.Tokens {
-			if t.Type == TokTotalHours || t.Type == TokTotalMinutes || t.Type == TokTotalSeconds {
-				return true
-			}
-		}
-	}
-	return false
-}
-*/
 
 // read a sequence of bytes of teh same character, returning the count and the remaining data.
 func readRepeat(input []byte) (rem []byte, ch byte, count int) {
@@ -435,7 +420,6 @@ NLOOP:
 			tokens, other = flush(tokens, other)
 			rem = rem[1:] // drop semi-colon
 			break NLOOP
-			//return tokens, rem[1:] // drop the semi-colon
 
 		default:
 			// handle quoted strings, etc
@@ -505,9 +489,7 @@ type CellFormat struct {
 type FormattedValue struct {
 	GoValue        interface{} // string, float64, bool, time.Time or time.Duration
 	FormattedValue string
-	//FormatType     FormatType
-	//FormatSubType  FormatSubType
-	Section Section // Format section that was used to generated FormattedValue
+	Section        Section // Format section that was used to generated FormattedValue
 }
 
 // ParseFormat parses the format string for a cell into a CellFormat that can be applied
@@ -528,14 +510,12 @@ func ParseFormat(format string) (t CellFormat) {
 			tokens, other = flush(tokens, other)
 			section, rem = tokenizeTime(tokens, rem)
 			sets = append(sets, section)
-			//sets = append(sets, Section{Type: TimeFormat, Tokens: tokens})
 			tokens = nil
 
 		case '#', '?', '0', '.':
 			// numeric
 			tokens, other = flush(tokens, other)
 			section, rem = tokenizeNumeric(tokens, rem)
-			//sets = append(sets, Section{NumberFormat, tokens})
 			sets = append(sets, section)
 			tokens = nil
 
@@ -569,7 +549,6 @@ func ParseFormat(format string) (t CellFormat) {
 					tokens, other = flush(tokens, other)
 					section, rem2 = tokenizeTime(tokens, rem)
 					sets = append(sets, section)
-					//sets = append(sets, Section{TimeFormat, tokens})
 					tokens = nil
 
 				case '<', '>', '=':
@@ -613,91 +592,6 @@ func ParseFormat(format string) (t CellFormat) {
 
 	return t
 }
-
-// FormatValue applies the parsed format to a specified value.
-// This is usually accessed via a Cell.
-/*
-func (ct CellFormat) FormatValue(sv string, cellType CellType, date1904 bool) (s string, err error) {
-	var fv float64
-	var isNumber bool
-
-	switch cellType {
-
-	case CellTypeBool:
-		// Not sure bools can be formatted?
-		if sv == "1" {
-			return "TRUE", nil
-		}
-		return "FALSE", nil
-
-	case CellTypeError:
-		return sv, nil
-
-	case CellTypeNumeric, CellTypeFormula:
-		isNumber = true
-
-	case CellTypeString, CellTypeInline:
-		// string
-		isNumber = false
-
-	default:
-		panic("Unhandled cell type")
-
-	}
-
-	if isNumber {
-		fv, err = strconv.ParseFloat(sv, 64)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	if ct.IsConditional {
-		return "", UnsupportedCondition
-	}
-
-	// note; the order of these cases  is important!
-	switch scount := len(ct.Sections); {
-	case scount < 4 && !isNumber:
-		// text, but no text section
-		return sv, nil
-
-	case scount == 0:
-		// TODO should format this if its a number
-		return sv, nil
-
-	case scount == 1 || (scount == 2 && fv == 0) || fv > 0:
-		// positive entry only
-		// always used if its the only section or the value is positive,
-		// else used if there's two sections but the value is zero
-		// value is implicitly not text by this case
-		formatted, err := formatValue(ct.Sections[0], sv, math.Abs(fv), date1904)
-		if err != nil {
-			return "", err
-		}
-		if fv < 0 {
-			return "-" + formatted, nil
-		}
-		return formatted, nil
-
-	case scount >= 2 && fv < 0:
-		// positive & negative values
-		// fv is implicitly negative here; if it were positive it would of been caught above
-		return formatValue(ct.Sections[1], sv, math.Abs(fv), date1904)
-
-	case scount >= 3 && fv == 0 && isNumber:
-		// positive ;negative; zero
-		// fv is implicitly zero
-		return formatValue(ct.Sections[2], sv, fv, date1904)
-
-	case scount > 3 && !isNumber:
-		return formatValue(ct.Sections[3], sv, math.Abs(fv), date1904)
-
-	default:
-		panic("Unhandled condition") // Bug if this occurs!
-	}
-}
-*/
 
 func (ct CellFormat) FormatValue(sv string, cellType CellType, date1904 bool) (v FormattedValue, err error) {
 	var fv float64
@@ -776,7 +670,6 @@ func (ct CellFormat) FormatValue(sv string, cellType CellType, date1904 bool) (v
 		if fv < 0 {
 			v.FormattedValue = "-" + v.FormattedValue
 			return v, nil
-			//return "-" + formatted, nil
 		}
 		return v, nil
 
@@ -804,61 +697,6 @@ func (ct CellFormat) FormatValue(sv string, cellType CellType, date1904 bool) (v
 	}
 }
 
-/*
-func (ct CellFormat) FormatType(sv string, cellType CellType, date1904 bool) (FormatType, FormatSubType, error) {
-	var fv float64
-	var err error
-
-	switch cellType {
-	case CellTypeBool:
-		return FormatTypeBool NoSubType, nil
-	}
-	if isNumber {
-		fv, err = strconv.ParseFloat(sv, 64)
-		if err != nil {
-			return NoType, NoSubType, err
-		}
-	}
-
-	if ct.IsConditional {
-		return NoType, NoSubType, UnsupportedCondition
-	}
-
-	// note; the order of these cases  is important!
-	switch scount := len(ct.Sections); {
-	case scount < 4 && !isNumber:
-		// text, but no text section
-		return TextFormat, NoSubType, nil
-
-	case scount == 0:
-		if isNumber {
-			return NumberFormat, NoSubType, nil
-		}
-		return TextFormat, NoSubType, nil
-
-	case scount == 1 || (scount == 2 && fv == 0) || fv > 0:
-		return ct.Sections[0].Type, ct.Sections[0].SubType, nil
-
-	case scount >= 2 && fv < 0:
-		// positive & negative values
-		// fv is implicitly negative here; if it were positive it would of been caught above
-		return ct.Sections[1].Type, ct.Sections[1].SubType, nil
-
-	case scount >= 3 && fv == 0 && isNumber:
-		// positive ;negative; zero
-		// fv is implicitly zero
-		return ct.Sections[2].Type, ct.Sections[2].SubType, nil
-
-	case scount > 3 && !isNumber:
-		return ct.Sections[3].Type, ct.Sections[3].SubType, nil
-
-	default:
-		panic("Unhandled condition") // Bug if this occurs!
-	}
-}
-*/
-
-//func formatValue(v *FormattedValue, s Section, sv string, fv float64, date1904 bool) (string, error) {
 func formatValue(v *FormattedValue, s Section, sv string, fv float64, date1904 bool) error {
 	v.Section = s
 	switch s.Type {
@@ -867,10 +705,8 @@ func formatValue(v *FormattedValue, s Section, sv string, fv float64, date1904 b
 		v.FormattedValue = fstr
 		// override numeric value
 		if s.SubType == Duration {
-			fmt.Println("SET DURATION", d)
 			v.GoValue = d
 		} else {
-			fmt.Println("SET TIME", t)
 			v.GoValue = t
 		}
 		return nil
@@ -1053,7 +889,6 @@ func formatNumber(tokens []FmtToken, v float64) string {
 
 			// strip/count trailing commas
 			data := stripTrailingComma(&v, token.Data)
-			fmt.Println("data", data)
 			for _, ch := range []byte(data) { // XXX utf8 issues?
 				switch ch {
 				case ',':
@@ -1063,7 +898,6 @@ func formatNumber(tokens []FmtToken, v float64) string {
 					intFmt = append(intFmt, ch)
 				}
 			}
-			fmt.Printf("inFmt now %q\n", string(intFmt))
 
 		case TokNumDec:
 			// data only contains 0?#,
@@ -1092,7 +926,6 @@ func formatNumber(tokens []FmtToken, v float64) string {
 
 		case TokNumExp:
 			// E+00, E00, e-00	kk
-			fmt.Println("EXP", token.Size)
 			hasExp = true
 			expPrec = token.Size
 		}
@@ -1115,16 +948,12 @@ func formatNumber(tokens []FmtToken, v float64) string {
 			}
 		} else {
 
-			fmt.Printf("FRAP f=%f, md=%d\n", math.Abs(f), int64(math.Pow(10, float64(len(fracDenomFmt)))-1))
 			fracNum, fracDenom = frap(math.Abs(f), int64(math.Pow(10, float64(len(fracDenomFmt)))-1))
 		}
 	}
 
 	// format the number
 	intval, decval, expval := splitNum(v, expPrec, decPrec)
-	fmt.Println("splitout", intval, decval, expval)
-
-	pretty.Println("Tokens", tokens)
 
 	for _, token := range tokens {
 		switch token.Type {
@@ -1133,8 +962,6 @@ func formatNumber(tokens []FmtToken, v float64) string {
 			if intval == "0" && !hasExp {
 				intval = ""
 			}
-			fmt.Println("int", string(intFmt), intval, len(intFmt), len(intval))
-			fmt.Printf("intfmt=%q intval=%q\n", intFmt, intval)
 			intval, sigonly := formatInteger(intFmt, intval)
 			if !(sigonly && intval == "0" && !hasExp) {
 				if hasComma {
@@ -1187,9 +1014,7 @@ func formatNumber(tokens []FmtToken, v float64) string {
 func formatInteger(intfmt []byte, intval string) (v string, sigonly bool) {
 	var prefix []byte
 	sigonly = true
-	fmt.Printf("infmt=%q intval=%q\n", string(intfmt), intval)
 	for i := 0; i < len(intfmt)-len(intval); i++ {
-		fmt.Printf("int ch i=%d ch=%c\n", i, intfmt[i])
 		switch ch := intfmt[i]; ch {
 		case '0':
 			prefix = append(prefix, '0')
@@ -1203,19 +1028,15 @@ func formatInteger(intfmt []byte, intval string) (v string, sigonly bool) {
 }
 
 func formatDecimal(decfmt []byte, decval string) string {
-	fmt.Printf("decfmt=%q decval=%q\n", decfmt, decval)
 	dvl := len(decval)
 	for i := 0; i < len(decfmt)-dvl; i++ {
-		fmt.Println("FMT CH", decfmt[i+dvl])
 		switch ch := decfmt[i+dvl]; ch {
 		case '0':
-			fmt.Println("add zero")
 			decval += "0"
 		case '?':
 			decval += " "
 		}
 	}
-	fmt.Println("formatDec result", decval)
 	return decval
 }
 
@@ -1241,9 +1062,7 @@ func fmtThou(intval string) string {
 func fmtSig(intval string, ifmt string) (sigonly bool, out string) {
 	var prefix []byte
 	sigonly = true
-	fmt.Println("int", string(ifmt), intval, len(ifmt), len(intval))
 	for i := 0; i < len(ifmt)-len(intval); i++ {
-		fmt.Println("ch", i, ifmt[i])
 		switch ch := ifmt[i]; ch {
 		case '0':
 			prefix = append(prefix, '0')
