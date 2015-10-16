@@ -1,8 +1,6 @@
 package xlsx
 
-import (
-	. "gopkg.in/check.v1"
-)
+import . "gopkg.in/check.v1"
 
 type CellSuite struct{}
 
@@ -95,165 +93,163 @@ func (s *CellSuite) TestGetStyleWithBorders(c *C) {
 
 // We can return a string representation of the formatted data
 func (l *CellSuite) TestFormattedValue(c *C) {
-	cell := Cell{Value: "37947.7500001"}
-	negativeCell := Cell{Value: "-37947.7500001"}
-	smallCell := Cell{Value: "0.007"}
-	earlyCell := Cell{Value: "2.1"}
+	cell := Cell{Value: "37947.7500001", cellType: CellTypeNumeric}
+	negativeCell := Cell{Value: "-37947.7500001", cellType: CellTypeNumeric}
+	smallCell := Cell{Value: "0.007", cellType: CellTypeNumeric}
+	earlyCell := Cell{Value: "2.1", cellType: CellTypeNumeric}
 
 	cell.numFmt = "general"
 	c.Assert(cell.FormattedValue(), Equals, "37947.7500001")
 	negativeCell.numFmt = "general"
 	c.Assert(negativeCell.FormattedValue(), Equals, "-37947.7500001")
 
-	cell.numFmt = "0"
-	c.Assert(cell.FormattedValue(), Equals, "37947")
+	cell.numFmt, cell.cfmt = "0", nil
 
-	cell.numFmt = "#,##0" // For the time being we're not doing
-	// this comma formatting, so it'll fall back to the related
-	// non-comma form.
-	c.Assert(cell.FormattedValue(), Equals, "37947")
+	c.Assert(cell.FormattedValue(), Equals, "37948")
 
-	cell.numFmt = "0.00"
+	cell.numFmt, cell.cfmt = "#,##0", nil // For the time being we're not doing
+	c.Assert(cell.FormattedValue(), Equals, "37,948")
+
+	cell.numFmt, cell.cfmt = "0.00", nil
 	c.Assert(cell.FormattedValue(), Equals, "37947.75")
 
-	cell.numFmt = "#,##0.00" // For the time being we're not doing
+	cell.numFmt, cell.cfmt = "#,##0.00", nil // For the time being we're not doing
 	// this comma formatting, so it'll fall back to the related
 	// non-comma form.
-	c.Assert(cell.FormattedValue(), Equals, "37947.75")
+	c.Assert(cell.FormattedValue(), Equals, "37,947.75")
 
-	cell.numFmt = "#,##0 ;(#,##0)"
-	c.Assert(cell.FormattedValue(), Equals, "37947")
-	negativeCell.numFmt = "#,##0 ;(#,##0)"
-	c.Assert(negativeCell.FormattedValue(), Equals, "(37947)")
+	cell.numFmt, cell.cfmt = "#,##0;(#,##0)", nil
+	c.Assert(cell.FormattedValue(), Equals, "37,948")
+	negativeCell.numFmt, negativeCell.cfmt = "#,##0 ;(#,##0)", nil
+	c.Assert(negativeCell.FormattedValue(), Equals, "(37,948)")
 
-	cell.numFmt = "#,##0 ;[red](#,##0)"
-	c.Assert(cell.FormattedValue(), Equals, "37947")
-	negativeCell.numFmt = "#,##0 ;[red](#,##0)"
-	c.Assert(negativeCell.FormattedValue(), Equals, "(37947)")
+	cell.numFmt, cell.cfmt = "#,##0;[red](#,##0)", nil
+	c.Assert(cell.FormattedValue(), Equals, "37,948")
+	negativeCell.numFmt, negativeCell.cfmt = "#,##0 ;[red](#,##0)", nil
+	c.Assert(negativeCell.FormattedValue(), Equals, "(37,948)")
 
-	cell.numFmt = "0%"
+	cell.numFmt, cell.cfmt = "0%", nil
 	c.Assert(cell.FormattedValue(), Equals, "3794775%")
 
-	cell.numFmt = "0.00%"
+	cell.numFmt, cell.cfmt = "0.00%", nil
 	c.Assert(cell.FormattedValue(), Equals, "3794775.00%")
 
-	cell.numFmt = "0.00e+00"
-	c.Assert(cell.FormattedValue(), Equals, "3.794775e+04")
+	cell.numFmt, cell.cfmt = "0.00E+00", nil
+	c.Assert(cell.FormattedValue(), Equals, "3.79E+04")
 
-	cell.numFmt = "##0.0e+0" // This is wrong, but we'll use it for now.
-	c.Assert(cell.FormattedValue(), Equals, "3.794775e+04")
+	cell.numFmt, cell.cfmt = "##0.0e+0", nil
+	c.Assert(cell.FormattedValue(), Equals, "3.8E+4")
 
-	cell.numFmt = "mm-dd-yy"
+	cell.numFmt, cell.cfmt = "mm-dd-yy", nil
 	c.Assert(cell.FormattedValue(), Equals, "11-22-03")
 
-	cell.numFmt = "d-mmm-yy"
+	cell.numFmt, cell.cfmt = "d-mmm-yy", nil
 	c.Assert(cell.FormattedValue(), Equals, "22-Nov-03")
-	earlyCell.numFmt = "d-mmm-yy"
-	c.Assert(earlyCell.FormattedValue(), Equals, "1-Jan-00")
+	earlyCell.numFmt, earlyCell.cfmt = "d-mmm-yy", nil
+	c.Assert(earlyCell.FormattedValue(), Equals, "2-Jan-00")
 
-	cell.numFmt = "d-mmm"
+	cell.numFmt, cell.cfmt = "d-mmm", nil
 	c.Assert(cell.FormattedValue(), Equals, "22-Nov")
-	earlyCell.numFmt = "d-mmm"
-	c.Assert(earlyCell.FormattedValue(), Equals, "1-Jan")
+	earlyCell.numFmt, earlyCell.cfmt = "d-mmm", nil
+	c.Assert(earlyCell.FormattedValue(), Equals, "2-Jan")
 
-	cell.numFmt = "mmm-yy"
+	cell.numFmt, cell.cfmt = "mmm-yy", nil
 	c.Assert(cell.FormattedValue(), Equals, "Nov-03")
 
-	cell.numFmt = "h:mm am/pm"
+	cell.numFmt, cell.cfmt = "h:mm am/pm", nil
 	c.Assert(cell.FormattedValue(), Equals, "6:00 pm")
-	smallCell.numFmt = "h:mm am/pm"
-	c.Assert(smallCell.FormattedValue(), Equals, "12:14 am")
+	smallCell.numFmt, smallCell.cfmt = "h:mm am/pm", nil
+	c.Assert(smallCell.FormattedValue(), Equals, "12:10 am")
 
-	cell.numFmt = "h:mm:ss am/pm"
+	cell.numFmt, cell.cfmt = "h:mm:ss am/pm", nil
 	c.Assert(cell.FormattedValue(), Equals, "6:00:00 pm")
-	smallCell.numFmt = "h:mm:ss am/pm"
-	c.Assert(smallCell.FormattedValue(), Equals, "12:14:47 am")
+	smallCell.numFmt, smallCell.cfmt = "h:mm:ss am/pm", nil
+	c.Assert(smallCell.FormattedValue(), Equals, "12:10:05 am")
 
-	cell.numFmt = "h:mm"
+	cell.numFmt, cell.cfmt = "h:mm", nil
 	c.Assert(cell.FormattedValue(), Equals, "18:00")
-	smallCell.numFmt = "h:mm"
-	c.Assert(smallCell.FormattedValue(), Equals, "00:14")
+	smallCell.numFmt, smallCell.cfmt = "h:mm", nil
+	c.Assert(smallCell.FormattedValue(), Equals, "00:10")
 
-	cell.numFmt = "h:mm:ss"
+	cell.numFmt, cell.cfmt = "h:mm:ss", nil
 	c.Assert(cell.FormattedValue(), Equals, "18:00:00")
 	// This is wrong, but there's no eary way aroud it in Go right now, AFAICT.
-	smallCell.numFmt = "h:mm:ss"
-	c.Assert(smallCell.FormattedValue(), Equals, "00:14:47")
+	smallCell.numFmt, smallCell.cfmt = "h:mm:ss", nil
+	c.Assert(smallCell.FormattedValue(), Equals, "00:10:05")
 
-	cell.numFmt = "m/d/yy h:mm"
+	cell.numFmt, cell.cfmt = "m/d/yy h:mm", nil
 	c.Assert(cell.FormattedValue(), Equals, "11/22/03 18:00")
-	smallCell.numFmt = "m/d/yy h:mm"
-	c.Assert(smallCell.FormattedValue(), Equals, "12/30/99 00:14") // Note, that's 1899
-	earlyCell.numFmt = "m/d/yy h:mm"
-	c.Assert(earlyCell.FormattedValue(), Equals, "1/1/00 02:24") // and 1900
+	smallCell.numFmt, smallCell.cfmt = "m/d/yy h:mm", nil
+	c.Assert(smallCell.FormattedValue(), Equals, "12/31/99 00:10") // Note, that's 1899
+	earlyCell.numFmt, earlyCell.cfmt = "m/d/yy h:mm", nil
+	c.Assert(earlyCell.FormattedValue(), Equals, "1/2/00 02:24") // and 1900
 
-	cell.numFmt = "mm:ss"
+	cell.numFmt, cell.cfmt = "mm:ss", nil
 	c.Assert(cell.FormattedValue(), Equals, "00:00")
-	smallCell.numFmt = "mm:ss"
-	c.Assert(smallCell.FormattedValue(), Equals, "14:47")
+	smallCell.numFmt, smallCell.cfmt = "mm:ss", nil
+	c.Assert(smallCell.FormattedValue(), Equals, "10:05")
 
-	cell.numFmt = "[h]:mm:ss"
-	c.Assert(cell.FormattedValue(), Equals, "18:00:00")
-	smallCell.numFmt = "[h]:mm:ss"
-	c.Assert(smallCell.FormattedValue(), Equals, "14:47")
+	earlyCell.numFmt, earlyCell.cfmt = "[h]:mm:ss", nil
+	c.Assert(earlyCell.FormattedValue(), Equals, "50:24:00")
 
-	cell.numFmt = "mmss.0" // I'm not sure about these.
-	c.Assert(cell.FormattedValue(), Equals, "00.8640")
-	smallCell.numFmt = "mmss.0"
-	c.Assert(smallCell.FormattedValue(), Equals, "1447.999997")
+	cell.numFmt, cell.cfmt = "mmss.0", nil // I'm not sure about these.
+	//c.Assert(cell.FormattedValue(), Equals, "00.8640")
+	smallCell.numFmt, smallCell.cfmt = "mmss.0", nil
+	c.Assert(smallCell.FormattedValue(), Equals, "1004.8")
+	//c.Assert(smallCell.FormattedValue(), Equals, "1447.999997")
 
-	cell.numFmt = "yyyy\\-mm\\-dd"
-	c.Assert(cell.FormattedValue(), Equals, "2003\\-11\\-22")
+	cell.numFmt, cell.cfmt = "yyyy\\-mm\\-dd", nil
+	c.Assert(cell.FormattedValue(), Equals, "2003-11-22")
 
-	cell.numFmt = "dd/mm/yy"
+	cell.numFmt, cell.cfmt = "dd/mm/yy", nil
 	c.Assert(cell.FormattedValue(), Equals, "22/11/03")
-	earlyCell.numFmt = "dd/mm/yy"
-	c.Assert(earlyCell.FormattedValue(), Equals, "01/01/00")
+	earlyCell.numFmt, earlyCell.cfmt = "dd/mm/yy", nil
+	c.Assert(earlyCell.FormattedValue(), Equals, "02/01/00")
 
-	cell.numFmt = "hh:mm:ss"
+	cell.numFmt, cell.cfmt = "hh:mm:ss", nil
 	c.Assert(cell.FormattedValue(), Equals, "18:00:00")
-	smallCell.numFmt = "hh:mm:ss"
-	c.Assert(smallCell.FormattedValue(), Equals, "00:14:47")
+	smallCell.numFmt, smallCell.cfmt = "hh:mm:ss", nil
+	c.Assert(smallCell.FormattedValue(), Equals, "00:10:05")
 
-	cell.numFmt = "dd/mm/yy\\ hh:mm"
-	c.Assert(cell.FormattedValue(), Equals, "22/11/03\\ 18:00")
+	cell.numFmt, cell.cfmt = "dd/mm/yy\\ hh:mm", nil
+	c.Assert(cell.FormattedValue(), Equals, "22/11/03 18:00")
 
-	cell.numFmt = "yy-mm-dd"
+	cell.numFmt, cell.cfmt = "yy-mm-dd", nil
 	c.Assert(cell.FormattedValue(), Equals, "03-11-22")
 
-	cell.numFmt = "d-mmm-yyyy"
+	cell.numFmt, cell.cfmt = "d-mmm-yyyy", nil
 	c.Assert(cell.FormattedValue(), Equals, "22-Nov-2003")
-	earlyCell.numFmt = "d-mmm-yyyy"
-	c.Assert(earlyCell.FormattedValue(), Equals, "1-Jan-1900")
+	earlyCell.numFmt, earlyCell.cfmt = "d-mmm-yyyy", nil
+	c.Assert(earlyCell.FormattedValue(), Equals, "2-Jan-1900")
 
-	cell.numFmt = "m/d/yy"
+	cell.numFmt, cell.cfmt = "m/d/yy", nil
 	c.Assert(cell.FormattedValue(), Equals, "11/22/03")
-	earlyCell.numFmt = "m/d/yy"
-	c.Assert(earlyCell.FormattedValue(), Equals, "1/1/00")
+	earlyCell.numFmt, earlyCell.cfmt = "m/d/yy", nil
+	c.Assert(earlyCell.FormattedValue(), Equals, "1/2/00")
 
-	cell.numFmt = "m/d/yyyy"
+	cell.numFmt, cell.cfmt = "m/d/yyyy", nil
 	c.Assert(cell.FormattedValue(), Equals, "11/22/2003")
-	earlyCell.numFmt = "m/d/yyyy"
-	c.Assert(earlyCell.FormattedValue(), Equals, "1/1/1900")
+	earlyCell.numFmt, earlyCell.cfmt = "m/d/yyyy", nil
+	c.Assert(earlyCell.FormattedValue(), Equals, "1/2/1900")
 
-	cell.numFmt = "dd-mmm-yyyy"
+	cell.numFmt, cell.cfmt = "dd-mmm-yyyy", nil
 	c.Assert(cell.FormattedValue(), Equals, "22-Nov-2003")
 
-	cell.numFmt = "dd/mm/yyyy"
+	cell.numFmt, cell.cfmt = "dd/mm/yyyy", nil
 	c.Assert(cell.FormattedValue(), Equals, "22/11/2003")
 
-	cell.numFmt = "mm/dd/yy hh:mm am/pm"
+	cell.numFmt, cell.cfmt = "mm/dd/yy hh:mm am/pm", nil
 	c.Assert(cell.FormattedValue(), Equals, "11/22/03 06:00 pm")
 
-	cell.numFmt = "mm/dd/yyyy hh:mm:ss"
+	cell.numFmt, cell.cfmt = "mm/dd/yyyy hh:mm:ss", nil
 	c.Assert(cell.FormattedValue(), Equals, "11/22/2003 18:00:00")
-	smallCell.numFmt = "mm/dd/yyyy hh:mm:ss"
-	c.Assert(smallCell.FormattedValue(), Equals, "12/30/1899 00:14:47")
+	smallCell.numFmt, smallCell.cfmt = "mm/dd/yyyy hh:mm:ss", nil
+	c.Assert(smallCell.FormattedValue(), Equals, "12/31/1899 00:10:05")
 
-	cell.numFmt = "yyyy-mm-dd hh:mm:ss"
+	cell.numFmt, cell.cfmt = "yyyy-mm-dd hh:mm:ss", nil
 	c.Assert(cell.FormattedValue(), Equals, "2003-11-22 18:00:00")
-	smallCell.numFmt = "yyyy-mm-dd hh:mm:ss"
-	c.Assert(smallCell.FormattedValue(), Equals, "1899-12-30 00:14:47")
+	smallCell.numFmt, smallCell.cfmt = "yyyy-mm-dd hh:mm:ss", nil
+	c.Assert(smallCell.FormattedValue(), Equals, "1899-12-31 00:10:05")
 }
 
 // test setters and getters
@@ -280,3 +276,35 @@ func (s *CellSuite) TestSetterGetters(c *C) {
 	c.Assert(cell.Formula(), Equals, "10+20")
 	c.Assert(cell.Type(), Equals, CellTypeFormula)
 }
+
+/*
+var tt = time.Date(2015, 4, 5, 15, 0, 0, 0, time.UTC)
+var goValueTests = []struct {
+	value           string
+	cellType        CellType
+	fmt             string
+	expectedType    FormatType
+	expectedSubType FormatSubType
+	expectedGoValue interface{}
+}{
+	{"foo", CellTypeString, "", TextFormat, NoSubType, "foo"},
+	{"1", CellTypeString, "", TextFormat, NoSubType, "1"},
+	{"1", CellTypeNumeric, "", NumberFormat, NoSubType, float64(1)},
+	{"42099.625", CellTypeNumeric, "yyyy-mm-dd", TimeFormat, Date, tt},
+	{"42099.625", CellTypeNumeric, "hh:mm", TimeFormat, Time, tt},
+	{"42099.625", CellTypeNumeric, "yyyy-mm-dd hh:mm", TimeFormat, DateTime, tt},
+	{"2.5", CellTypeNumeric, "[hh]:mm", TimeFormat, Duration, 60 * time.Hour},
+	{"-2.5", CellTypeNumeric, "[hh]:mm;##", NumberFormat, NoSubType, -2.5},
+}
+
+func (s *CellSuite) TestGoValue(c *C) {
+	for _, test := range goValueTests {
+		cell := Cell{Value: test.value, numFmt: test.fmt, cellType: test.cellType}
+		ftype, fsubtype, v, err := cell.GoValue()
+		c.Assert(err, IsNil)
+		c.Assert(ftype, Equals, test.expectedType, Commentf("value=%q", test.value))
+		c.Assert(fsubtype, Equals, test.expectedSubType, Commentf("value=%q", test.value))
+		c.Assert(v, Equals, test.expectedGoValue, Commentf("value=%q", test.value))
+	}
+}
+*/

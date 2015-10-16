@@ -1,8 +1,9 @@
 package xlsx
 
 import (
-	. "gopkg.in/check.v1"
 	"time"
+
+	. "gopkg.in/check.v1"
 )
 
 type DateSuite struct{}
@@ -38,8 +39,10 @@ func (d *DateSuite) TestJulianDateToGregorianTime(c *C) {
 
 func (d *DateSuite) TestTimeFromExcelTime(c *C) {
 	date := TimeFromExcelTime(0, false)
-	c.Assert(date, Equals, time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC))
-	date = TimeFromExcelTime(60, false)
+	c.Assert(date, Equals, time.Date(1899, 12, 31, 0, 0, 0, 0, time.UTC))
+	date = TimeFromExcelTime(59, false)
+	c.Assert(date, Equals, time.Date(1900, 2, 28, 0, 0, 0, 0, time.UTC))
+	date = TimeFromExcelTime(60, false) // Excel displays as the non-existant date 1900-02-29
 	c.Assert(date, Equals, time.Date(1900, 2, 28, 0, 0, 0, 0, time.UTC))
 	date = TimeFromExcelTime(61, false)
 	c.Assert(date, Equals, time.Date(1900, 3, 1, 0, 0, 0, 0, time.UTC))
@@ -49,7 +52,7 @@ func (d *DateSuite) TestTimeFromExcelTime(c *C) {
 
 func (d *DateSuite) TestTimeFromExcelTimeWithFractionalPart(c *C) {
 	date := TimeFromExcelTime(0.114583333333333, false)
-	c.Assert(date.Round(time.Second), Equals, time.Date(1899, 12, 30, 2, 45, 0, 0, time.UTC))
+	c.Assert(date.Round(time.Second), Equals, time.Date(1899, 12, 31, 2, 45, 0, 0, time.UTC))
 
 	date = TimeFromExcelTime(60.1145833333333, false)
 	c.Assert(date.Round(time.Second), Equals, time.Date(1900, 2, 28, 2, 45, 0, 0, time.UTC))

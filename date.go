@@ -69,7 +69,7 @@ func doTheFliegelAndVanFlandernAlgorithm(jd int) (day, month, year int) {
 }
 
 // Convert an excelTime representation (stored as a floating point number) to a time.Time.
-func TimeFromExcelTime(excelTime float64, date1904 bool) time.Time {
+func TimeFromExcelTimeOrg(excelTime float64, date1904 bool) time.Time {
 	var date time.Time
 	var intPart int64 = int64(excelTime)
 	// Excel uses Julian dates prior to March 1st 1900, and
@@ -90,9 +90,32 @@ func TimeFromExcelTime(excelTime float64, date1904 bool) time.Time {
 	if date1904 {
 		date = time.Date(1904, 1, 1, 0, 0, 0, 0, time.UTC)
 	} else {
+		//date = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
 		date = time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)
 	}
 	durationDays := time.Duration(intPart) * time.Hour * 24
 	durationPart := time.Duration(dayNanoSeconds * floatPart)
 	return date.Add(durationDays).Add(durationPart)
+}
+
+func TimeFromExcelTime(excelTime float64, date1904 bool) time.Time {
+	if date1904 {
+		return time.Date(1904, 1, 1, 0, 0, 0, 0, time.UTC).Add(DurationFromExcelTime(excelTime))
+	}
+
+	if excelTime < 60 {
+		// "0" in Excel maps to 1900-01-00-00:00:00 (1899 is the closest Go equivalent)
+		// "59" == 1900-02-28
+		// "60" == 1900-02-29 (which doesn't actually exist since 1900 wasn't a leap year)
+		// "61" == 1900-03-01
+		return time.Date(1899, 12, 31, 0, 0, 0, 0, time.UTC).Add(DurationFromExcelTime(excelTime))
+	}
+	// Force non-existant 1900-02-29 to be mapped to 1900-02-28 in Go
+	// Dates subsequent to this follow the normal Gregorian calendar, which Go also implements.
+	return time.Date(1900, 2, 28, 0, 0, 0, 0, time.UTC).Add(DurationFromExcelTime(excelTime - 60))
+}
+
+// Convert a duration float in Excel (fractions of a 24 hour period) to a time.Duration
+func DurationFromExcelTime(excelTime float64) time.Duration {
+	return time.Duration(excelTime * float64(24*time.Hour))
 }
