@@ -703,7 +703,7 @@ func (l *LibSuite) TestReadRowsFromSheetWithMultipleTypes(c *C) {
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <dimension ref="A1:F1"/>
+  <dimension ref="A1:G1"/>
   <sheetViews>
     <sheetView tabSelected="1" workbookViewId="0">
       <selection activeCell="C1" sqref="C1"/>
@@ -711,7 +711,7 @@ func (l *LibSuite) TestReadRowsFromSheetWithMultipleTypes(c *C) {
   </sheetViews>
   <sheetFormatPr baseColWidth="10" defaultRowHeight="15"/>
   <sheetData>
-    <row r="1" spans="1:6">
+    <row r="1" spans="1:7">
       <c r="A1" t="s">
         <v>0</v>
       </c>
@@ -732,6 +732,9 @@ func (l *LibSuite) TestReadRowsFromSheetWithMultipleTypes(c *C) {
       	<f>10/0</f>
         <v>#DIV/0!</v>
       </c>
+      <c r="G1" t="inlineStr">
+        <is><t>inline value</t></is>
+      </c>
     </row>
   </sheetData>
   <pageMargins left="0.7" right="0.7"
@@ -750,9 +753,9 @@ func (l *LibSuite) TestReadRowsFromSheetWithMultipleTypes(c *C) {
 	file.referenceTable = MakeSharedStringRefTable(sst)
 	rows, _, maxCols, maxRows := readRowsFromSheet(worksheet, file)
 	c.Assert(maxRows, Equals, 1)
-	c.Assert(maxCols, Equals, 6)
+	c.Assert(maxCols, Equals, 7)
 	row := rows[0]
-	c.Assert(len(row.Cells), Equals, 6)
+	c.Assert(len(row.Cells), Equals, 7)
 
 	cell1 := row.Cells[0]
 	c.Assert(cell1.Type(), Equals, CellTypeString)
@@ -781,6 +784,10 @@ func (l *LibSuite) TestReadRowsFromSheetWithMultipleTypes(c *C) {
 	c.Assert(cell6.Type(), Equals, CellTypeError)
 	c.Assert(cell6.Formula(), Equals, "10/0")
 	c.Assert(cell6.Value, Equals, "#DIV/0!")
+
+	cell7 := row.Cells[6]
+	c.Assert(cell7.Type(), Equals, CellTypeString)
+	c.Assert(cell7.Value, Equals, "inline value")
 }
 
 // When converting the xlsxRow to a Row we create a as many cells as we find.

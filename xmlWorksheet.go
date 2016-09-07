@@ -231,11 +231,18 @@ type xlsxRow struct {
 // currently I have not checked it for completeness - it does as much
 // as I need.
 type xlsxC struct {
-	R string `xml:"r,attr"`           // Cell ID, e.g. A1
-	S int    `xml:"s,attr"`           // Style reference.
-	T string `xml:"t,attr,omitempty"` // Type.
-	V string `xml:"v"`                // Value
-	F *xlsxF `xml:"f,omitempty"`      // Formula
+	R  string  `xml:"r,attr"`           // Cell ID, e.g. A1
+	S  int     `xml:"s,attr"`           // Style reference.
+	T  string  `xml:"t,attr,omitempty"` // Type.
+	V  string  `xml:"v"`                // Value
+	F  *xlsxF  `xml:"f,omitempty"`      // Formula
+	IS *xlsxIS `xml:"is,omitempty"`     // Inline string
+}
+
+// xlsxIS represent an inlineStr cell value, which is common in XLSX
+// files produced by Excel 2007.
+type xlsxIS struct {
+	T string `xml:"t"`
 }
 
 // xlsxC directly maps the f element in the namespace
