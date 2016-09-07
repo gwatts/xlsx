@@ -72,6 +72,11 @@ func (w *WorksheetSuite) TestUnmarshallWorksheet(c *C) {
                  t="s">
                 <v>1</v>
               </c>
+              <c r="C1"
+                 s="0"
+                 t="inlineStr">
+                <is><t>inline value</t></is>
+              </c>
             </row>
             <row collapsed="false"
                  customFormat="false"
@@ -133,9 +138,14 @@ func (w *WorksheetSuite) TestUnmarshallWorksheet(c *C) {
 	c.Assert(worksheet.SheetData.Row, HasLen, 2)
 	row := worksheet.SheetData.Row[0]
 	c.Assert(row.R, Equals, 1)
-	c.Assert(row.C, HasLen, 2)
+	c.Assert(row.C, HasLen, 3)
 	cell := row.C[0]
 	c.Assert(cell.R, Equals, "A1")
 	c.Assert(cell.T, Equals, "s")
 	c.Assert(cell.V, Equals, "0")
+	cell = row.C[2]
+	c.Assert(cell.R, Equals, "C1")
+	c.Assert(cell.T, Equals, "inlineStr")
+	c.Assert(cell.V, Equals, "")
+	c.Assert(cell.IS.T, Equals, "inline value")
 }
