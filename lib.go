@@ -473,7 +473,7 @@ func readRowsFromSheet(Worksheet *xlsxWorksheet, file *File) ([]*Row, []*Col, in
 		rows[rowIndex] = makeEmptyRow()
 	}
 
-	for rowIndex := 0; rowIndex < len(Worksheet.SheetData.Row); rowIndex++ {
+	for rowIndex := minRow; rowIndex < len(Worksheet.SheetData.Row); rowIndex++ {
 		rawrow := Worksheet.SheetData.Row[rowIndex]
 		// Some spreadsheets will omit blank rows from the
 		// stored data
